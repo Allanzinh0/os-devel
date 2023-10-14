@@ -35,6 +35,7 @@ entry:
 
 .pmode:
   [bits 32]
+  xor eax, eax
   mov ax, 0x10
   mov ds, ax
   mov ss, ax
@@ -127,9 +128,6 @@ KbdControllerDisableKeyboard      equ 0xAD
 KbdControllerEnableKeyboard       equ 0xAE
 KbdControllerReadCtrlOutputPort   equ 0xD0
 KbdControllerWriteCtrlOutputPort  equ 0xD1
-
-
-ScreenBuffer                      equ 0xB8000
 
 g_GDT:
   ; NULL descriptor

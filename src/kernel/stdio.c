@@ -9,7 +9,7 @@ const unsigned SCREEN_WIDTH = 80;
 const unsigned SCREEN_HEIGHT = 25;
 uint8_t *g_ScreenBuffer = (uint8_t *)0xB8000;
 int g_ScreenX = 0, g_ScreenY = 0;
-uint8_t g_Color = 0x07;
+uint8_t g_Color = 0x0A;
 
 void putchr(int x, int y, char c) {
   g_ScreenBuffer[2 * (y * SCREEN_WIDTH + x)] = c;
@@ -91,6 +91,7 @@ void puts(const char *str) {
 }
 
 void clrscr() {
+
   for (int y = 0; y < SCREEN_HEIGHT; y++) {
     for (int x = 0; x < SCREEN_WIDTH; x++) {
       putchr(x, y, ' ');
