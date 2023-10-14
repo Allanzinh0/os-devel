@@ -1,12 +1,132 @@
 #include "stdio.h"
+
 #include "x86.h"
 
-void putc(char c) { x86_Video_WriteCharTeletype(c, 0); }
+#include <stdarg.h>
+#include <stdbool.h>
+
+const unsigned SCREEN_WIDTH = 80;
+const unsigned SCREEN_HEIGHT = 25;
+uint8_t *g_ScreenBuffer = (uint8_t *)0xB8000;
+int g_ScreenX = 0, g_ScreenY = 0;
+uint8_t g_Color = 0x07;
+
+void putchr(int x, int y, char c) {
+  g_ScreenBuffer[2 * (y * SCREEN_WIDTH + x)] = c;
+}
+
+void putcolor(int x, int y, uint8_t color) {
+  g_ScreenBuffer[2 * (y * SCREEN_WIDTH + x) + 1] = color;
+}
+
+char getchr(int x, int y) { return g_ScreenBuffer[2 * (y * SCREEN_WIDTH + x)]; }
+
+uint8_t getcolor(int x, int y) {
+  return g_ScreenBuffer[2 * (y * SCREEN_WIDTH + x) + 1];
+}
+
+void scrollBack(int lines) {
+  for (int y = lines; y < SCREEN_HEIGHT; y++)
+    for (int x = 0; x < SCREEN_WIDTH; x++) {
+      putchr(x, y - lines, getchr(x, y));
+      putcolor(x, y - lines, getcolor(x, y));
+    }
+
+  for (int y = SCREEN_HEIGHT - lines; y < SCREEN_HEIGHT; y++)
+    for (int x = 0; x < SCREEN_WIDTH; x++) {
+      putchr(x, y, ' ');
+      putcolor(x, y, g_Color);
+    }
+
+  g_ScreenY -= lines;
+}
+
+void putc(char c) {
+  switch (c) {
+  case '\n':
+    g_ScreenX = 0;
+    g_ScreenY++;
+    break;
+  case '\t':
+    for (int i = 0; i < 4 - (g_ScreenX % 4); i++)
+      putc(' ');
+    break;
+  case '\r':
+    g_ScreenX = 0;
+    break;
+  default:
+    putchr(g_ScreenX, g_ScreenY, c);
+    putcolor(g_ScreenX, g_ScreenY, g_Color);
+    g_ScreenX++;
+    break;
+  }
+
+  if (g_ScreenX >= SCREEN_WIDTH) {
+    g_ScreenY++;
+    g_ScreenX = 0;
+  }
+
+  if (g_ScreenY >= SCREEN_HEIGHT) {
+    scrollBack(1);
+  }
+
+  setcursor(g_ScreenX, g_ScreenY);
+}
 
 void puts(const char *str) {
   while (*str) {
     putc(*str);
     str++;
+  }
+}
+
+void clrscr() {
+  for (int y = 0; y < SCREEN_HEIGHT; y++) {
+    for (int x = 0; x < SCREEN_WIDTH; x++) {
+      putchr(x, y, ' ');
+    }
+  }
+
+  g_ScreenX = 0;
+  g_ScreenY = 0;
+  setcursor(g_ScreenX, g_ScreenY);
+}
+
+void setcursor(uint8_t x, uint8_t y) {
+  int pos = y * SCREEN_WIDTH + x;
+
+  x86_outb(0x3D4, 0x0F);
+  x86_outb(0x3D5, (uint8_t)(pos & 0xFF));
+
+  x86_outb(0x3D4, 0x0E);
+  x86_outb(0x3D5, (uint8_t)((pos >> 8) & 0xFF));
+}
+
+const char g_HexChars[] = "0123456789ABCDEF";
+
+void printf_unsigned(unsigned long long number, int radix) {
+  char buffer[32];
+  int pos = 0;
+
+  do {
+    unsigned long long rem = number % radix;
+    number /= radix;
+    buffer[pos++] = g_HexChars[rem];
+  } while (number > 0);
+
+  if (radix == 16 && pos == 1)
+    buffer[pos++] = '0';
+
+  while (--pos >= 0)
+    putc(buffer[pos]);
+}
+
+void printf_signed(long long number, int radix) {
+  if (number < 0) {
+    putc('-');
+    printf_unsigned(-number, radix);
+  } else {
+    printf_unsigned(number, radix);
   }
 }
 
@@ -22,16 +142,15 @@ void puts(const char *str) {
 #define PRINTF_LENGTH_LONG 3
 #define PRINTF_LENGTH_LONG_LONG 4
 
-int *printf_number(int *argp, int length, bool sign, int radix);
+void printf(const char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
 
-void _cdecl printf(const char *fmt, ...) {
-  int *argp = (int *)&fmt;
   int state = PRINTF_STATE_NORMAL;
   int length = PRINTF_LENGTH_DEFAULT;
   int radix = 10;
   bool sign = true;
-
-  argp++;
+  bool number = false;
 
   while (*fmt) {
     switch (state) {
@@ -80,12 +199,10 @@ void _cdecl printf(const char *fmt, ...) {
     PRINTF_STATE_SPEC_:
       switch (*fmt) {
       case 'c':
-        putc((char)*argp);
-        argp++;
+        putc((char)va_arg(args, int));
         break;
       case 's':
-        puts(*(char **)argp);
-        argp++;
+        puts(va_arg(args, const char *));
         break;
       case '%':
         putc('%');
@@ -94,29 +211,62 @@ void _cdecl printf(const char *fmt, ...) {
       case 'i':
         radix = 10;
         sign = true;
-        argp = printf_number(argp, length, sign, radix);
+        number = true;
         break;
       case 'u':
         radix = 10;
         sign = false;
-        argp = printf_number(argp, length, sign, radix);
+        number = true;
         break;
       case 'X':
       case 'x':
       case 'p':
         radix = 16;
         sign = false;
-        argp = printf_number(argp, length, sign, radix);
+        number = true;
         break;
       case 'o':
         radix = 8;
         sign = false;
-        argp = printf_number(argp, length, sign, radix);
+        number = true;
         break;
         // Ignore invalid spec
       default:
         break;
       }
+
+      if (number) {
+        if (sign) {
+          switch (length) {
+          case PRINTF_LENGTH_SHORT_SHORT:
+          case PRINTF_LENGTH_SHORT:
+          case PRINTF_LENGTH_DEFAULT:
+            printf_signed(va_arg(args, int), radix);
+            break;
+          case PRINTF_LENGTH_LONG:
+            printf_signed(va_arg(args, long), radix);
+            break;
+          case PRINTF_LENGTH_LONG_LONG:
+            printf_signed(va_arg(args, long long), radix);
+            break;
+          }
+        } else {
+          switch (length) {
+          case PRINTF_LENGTH_SHORT_SHORT:
+          case PRINTF_LENGTH_SHORT:
+          case PRINTF_LENGTH_DEFAULT:
+            printf_unsigned(va_arg(args, int), radix);
+            break;
+          case PRINTF_LENGTH_LONG:
+            printf_unsigned(va_arg(args, long), radix);
+            break;
+          case PRINTF_LENGTH_LONG_LONG:
+            printf_unsigned(va_arg(args, long long), radix);
+            break;
+          }
+        }
+      }
+
       // Reset states
       state = PRINTF_STATE_NORMAL;
       length = PRINTF_LENGTH_DEFAULT;
@@ -127,73 +277,21 @@ void _cdecl printf(const char *fmt, ...) {
     }
     fmt++;
   }
+
+  va_end(args);
 }
 
-const char g_HexChars[] = "0123456789ABCDEF";
+void print_buffer(const char *msg, const void *buffer, uint32_t count) {
+  printf(msg);
+  for (int i = 0; i < count; i++) {
+    if (i % 16 == 0)
+      printf("\n%p:", i);
 
-int *printf_number(int *argp, int length, bool sign, int radix) {
-  char buffer[32];
-  unsigned long long number;
-  int number_sign = 1;
-  int pos = 0;
+    if (i % 4 == 0)
+      printf(" ");
 
-  // Process length
-  switch (length) {
-  case PRINTF_LENGTH_SHORT_SHORT:
-  case PRINTF_LENGTH_SHORT:
-  case PRINTF_LENGTH_DEFAULT:
-    if (sign) {
-      int n = *argp;
-      if (n < 0) {
-        n = -n;
-        number_sign = -1;
-      }
-      number = n;
-    } else {
-      number = *(unsigned int *)argp;
-    }
-    argp++;
-    break;
-  case PRINTF_LENGTH_LONG:
-    if (sign) {
-      long int n = *(long int *)argp;
-      if (n < 0) {
-        n = -n;
-        number_sign = -1;
-      }
-      number = (unsigned long long)n;
-    } else {
-      number = *(unsigned long int *)argp;
-    }
-    argp += 2;
-    break;
-  case PRINTF_LENGTH_LONG_LONG:
-    if (sign) {
-      long long n = *(long long *)argp;
-      if (n < 0) {
-        n = -n;
-        number_sign = -1;
-      }
-      number = (unsigned long long)n;
-    } else {
-      number = *(unsigned long long *)argp;
-    }
-    argp += 4;
+    printf("%p ", ((uint8_t *)buffer)[i]);
   }
 
-  // Convert number to ASCII
-  do {
-    uint32_t rem;
-    x86_div64_32(number, radix, &number, &rem);
-    buffer[pos++] = g_HexChars[rem];
-  } while (number > 0);
-
-  // Add sign
-  if (sign && number_sign < 0)
-    buffer[pos++] = '-';
-
-  while (--pos >= 0)
-    putc(buffer[pos]);
-
-  return argp;
+  printf("\n");
 }

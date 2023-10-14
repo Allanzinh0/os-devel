@@ -1,7 +1,11 @@
 #include "disk.h"
+
+#include "stdio.h"
 #include "x86.h"
 
 bool DISK_Initialize(DISK *disk, uint8_t driveNumber) {
+  printf("[ DISK ]: Initializing disk drive %u\n", driveNumber);
+
   uint8_t driveType;
   uint16_t cylinders, sectors, heads;
 
@@ -10,9 +14,12 @@ bool DISK_Initialize(DISK *disk, uint8_t driveNumber) {
     return false;
 
   disk->id = driveNumber;
-  disk->cylinders = cylinders + 1;
+  disk->cylinders = cylinders;
   disk->sectors = sectors;
-  disk->heads = heads + 1;
+  disk->heads = heads;
+
+  printf("[ DISK ]: Drive %u ready! Cylinders: %lu, Sectors: %lu, Heads: %lu\n",
+         driveNumber, cylinders, sectors, heads);
 
   return true;
 }
@@ -30,13 +37,13 @@ void DISK_LBA2CHS(DISK *disk, uint32_t lba, uint16_t *cylinderOut,
 }
 
 bool DISK_ReadSectors(DISK *disk, uint32_t lba, uint8_t sectors,
-                      void far *dataOut) {
+                      void *lowerDataOut) {
   uint16_t cylinder, sector, head;
 
   DISK_LBA2CHS(disk, lba, &cylinder, &sector, &head);
 
   for (int i = 0; i < 3; i++) {
-    if (x86_Disk_Read(disk->id, cylinder, sector, head, sectors, dataOut))
+    if (x86_Disk_Read(disk->id, cylinder, sector, head, sectors, lowerDataOut))
       return true;
 
     x86_Disk_Reset(disk->id);
