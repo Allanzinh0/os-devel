@@ -1,10 +1,12 @@
 TARGET_ASMFLAGS += -f elf
-TARGET_CFLAGS += -ffreestanding -nostdlib
+TARGET_CFLAGS += -ffreestanding -nostdlib -I.
 TARGET_LIBS += -lgcc
 TARGET_LINKFLAGS += -T linker.ld -nostdlib
 
-SOURCES_C=$(wildcard *.c)
-SOURCES_ASM=$(wildcard *.asm)
+SOURCES_C=$(shell find . -type f -name "*.c")
+HEADERS_C=$(shell find . -type f -name "*.h")
+SOURCES_ASM=$(shell find . -type f -name "*.asm")
+HEADERS_ASM=$(shell find . -type f -name "*.inc")
 OBJECTS_C=$(patsubst %.c, $(OBJ_DIR)/kernel/c/%.obj, $(SOURCES_C))
 OBJECTS_ASM=$(patsubst %.asm, $(OBJ_DIR)/kernel/asm/%.obj, $(SOURCES_ASM))
 
@@ -17,15 +19,13 @@ kernel: $(BUILD_DIR)/kernel.bin
 $(BUILD_DIR)/kernel.bin: $(OBJECTS_ASM) $(OBJECTS_C)
 	$(TARGET_LD) $(TARGET_LINKFLAGS) -Wl,-Map=$(BUILD_DIR)/kernel.map -o $@ $^ $(TARGET_LIBS)
 
-$(OBJ_DIR)/kernel/c/%.obj: %.c always
+$(OBJ_DIR)/kernel/c/%.obj: %.c $(HEADERS_C)
+	mkdir -p $(@D)
 	$(TARGET_CC) $(TARGET_CFLAGS) -c -o $@ $<
 
-$(OBJ_DIR)/kernel/asm/%.obj: %.asm always
+$(OBJ_DIR)/kernel/asm/%.obj: %.asm $(HEADERS_ASM)
+	mkdir -p $(@D)
 	$(TARGET_ASM) $(TARGET_ASMFLAGS) -o $@ $<
-
-always:
-	mkdir -p $(OBJ_DIR)/kernel/c
-	mkdir -p $(OBJ_DIR)/kernel/asm
 
 clean:
 	rm -f $(OBJ_DIR)/kernel.bin
