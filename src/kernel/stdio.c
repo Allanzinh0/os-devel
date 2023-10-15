@@ -22,11 +22,11 @@ void putcolor(int x, int y, uint8_t color) {
 void setcursor(uint8_t x, uint8_t y) {
   int pos = y * SCREEN_WIDTH + x;
 
-  x86_outb(0x3D4, 0x0F);
-  x86_outb(0x3D5, (uint8_t)(pos & 0xFF));
+  i686_outb(0x3D4, 0x0F);
+  i686_outb(0x3D5, (uint8_t)(pos & 0xFF));
 
-  x86_outb(0x3D4, 0x0E);
-  x86_outb(0x3D5, (uint8_t)((pos >> 8) & 0xFF));
+  i686_outb(0x3D4, 0x0E);
+  i686_outb(0x3D5, (uint8_t)((pos >> 8) & 0xFF));
 }
 
 char getchr(int x, int y) { return g_ScreenBuffer[2 * (y * SCREEN_WIDTH + x)]; }
