@@ -1,0 +1,5 @@
+build
+obj
+*.obj
+*.bin
+build/floppy-image.img
