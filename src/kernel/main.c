@@ -13,11 +13,10 @@ void timer(Registers *regs) { printf("."); }
 void __attribute__((section(".entry"))) start() {
   memset(&__bss_start, 0, (&__end) - (&__bss_start));
 
-  HAL_Initialize();
-
   clrscr();
-
   printf("[KERNEL]: Enter in kernel mode!\n");
+
+  HAL_Initialize();
 
   i686_IRQ_RegisterHandler(0, timer);
 
