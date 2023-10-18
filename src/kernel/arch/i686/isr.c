@@ -50,7 +50,10 @@ void i686_ISR_Initialize() {
     i686_IDT_EnableGate(i);
 }
 
-void i686_ISR_RegisterHandler(int interrupt) {}
+void i686_ISR_RegisterHandler(int interrupt, ISRHandler handler) {
+  g_ISRHandlers[interrupt] = handler;
+  i686_IDT_EnableGate(interrupt);
+}
 
 void __attribute((cdecl)) i686_ISR_Handler(Registers *regs) {
   if (g_ISRHandlers[regs->interrupt] != NULL)

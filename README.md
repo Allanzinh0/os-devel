@@ -8,7 +8,7 @@ The code is following the playlist below from nanobyte:
 
 The OS is able to run from a floppy disk, print messages on screen read the kernel from disk and run!
 The Bootloader is able to access the floppy drive find the kernel and run!
-The Kernel has its own GDT and have an implementation of IDT and ISR interrupts and exceptions!
+The Kernel has its own GDT and have an implementation of IDT, ISR and hardware (IRQ) interrupts and exceptions!
 The kernel also have an printf function to print on screen.
 
 For the compilation is used an docker file that create a toolchain using alpine linux!
