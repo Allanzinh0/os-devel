@@ -14,3 +14,7 @@ bool __attribute__((cdecl))
 x86_Disk_GetDriveParams(uint8_t drive, uint8_t *driveTypeOut,
                         uint16_t *cylindersOut, uint16_t *sectorsOut,
                         uint16_t *headsOut);
+
+int __attribute__((cdecl)) x86_Video_GetVbeInfo(void *infoOut);
+int __attribute__((cdecl)) x86_Video_GetModeInfo(uint16_t mode, void *infoOut);
+int __attribute__((cdecl)) x86_Video_SetMode(uint16_t mode);

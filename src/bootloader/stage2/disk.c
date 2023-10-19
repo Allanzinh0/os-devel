@@ -38,8 +38,8 @@ void DISK_LBA2CHS(DISK *disk, uint32_t lba, uint16_t *cylinderOut,
 
 bool DISK_ReadSectors(DISK *disk, uint32_t lba, uint8_t sectors,
                       void *lowerDataOut) {
-  printf("[ DISK ]: Reading sectors of drive %u, LBA: %lu, Sectors: %lu\n",
-         disk->id, lba, sectors);
+  // printf("[ DISK ]: Reading sectors of drive %u, LBA: %lu, Sectors: %lu\n",
+  // disk->id, lba, sectors);
   uint16_t cylinder, sector, head;
 
   DISK_LBA2CHS(disk, lba, &cylinder, &sector, &head);
