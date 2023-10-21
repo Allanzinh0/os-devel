@@ -9,15 +9,7 @@ all: clean always floppy_image bootloader kernel
 floppy_image: $(BUILD_DIR)/main_floppy.img
 
 $(BUILD_DIR)/main_floppy.img: bootloader kernel
-	dd if=/dev/zero of=$(BUILD_DIR)/main_floppy.img bs=512 count=2880
-	mkfs.fat -F 12 -n "OS-DEVEL" $(BUILD_DIR)/main_floppy.img
-	dd if=$(OBJ_DIR)/stage1.bin of=$(BUILD_DIR)/main_floppy.img conv=notrunc
-	mcopy -i $(BUILD_DIR)/main_floppy.img $(OBJ_DIR)/stage2.bin "::stage2.bin"
-	mcopy -i $(BUILD_DIR)/main_floppy.img $(BUILD_DIR)/kernel.bin "::kernel.bin"
-	mcopy -i $(BUILD_DIR)/main_floppy.img test.txt "::test.txt"
-	mmd -i $(BUILD_DIR)/main_floppy.img "::mydir"
-	mcopy -i $(BUILD_DIR)/main_floppy.img test.txt "::mydir/test.txt"
-
+	./build-tools/make_floppy.sh $@
 #
 # Bootloader
 #
