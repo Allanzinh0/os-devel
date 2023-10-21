@@ -1,3 +1,5 @@
+export MAKE_DISK_SIZE=16777216
+
 export TARGET = i686-elf
 export TARGET_ASM = nasm
 export TARGET_ASMFLAGS = 

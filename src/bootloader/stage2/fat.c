@@ -65,6 +65,7 @@ typedef struct {
 static FAT_Data *g_Data;
 static uint8_t *g_Fat;
 static uint32_t g_DataSectionLba;
+static uint8_t g_FatType;
 
 bool FAT_ReadBootSector(DISK *disk) {
   return DISK_ReadSectors(disk, 0, 1, &g_Data->BS.BootSectorBytes);
@@ -74,6 +75,8 @@ bool FAT_ReadFat(DISK *disk) {
   return DISK_ReadSectors(disk, g_Data->BS.BootSector.ReservedSectors,
                           g_Data->BS.BootSector.SectorsPerFat, g_Fat);
 }
+
+void FAT_Detect(DISK *disk) {}
 
 bool FAT_Initialize(DISK *disk) {
   g_Data = (FAT_Data *)MEMORY_FAT_ADDR;

@@ -2,6 +2,7 @@
 
 #include "disk.h"
 #include "fat.h"
+#include "mbr.h"
 #include "memdefs.h"
 #include "memory.h"
 #include "stdio.h"
@@ -11,7 +12,7 @@ uint8_t *Kernel = (uint8_t *)MEMORY_KERNEL_ADDR;
 
 typedef void (*KernelStart)();
 
-void __attribute__((cdecl)) start(uint16_t bootDrive) {
+void stage2_start(uint16_t bootDrive, void *partition) {
   clrscr();
 
   printf("[STAGE2]: Enter 32-bit protected mode!\n");
@@ -19,12 +20,14 @@ void __attribute__((cdecl)) start(uint16_t bootDrive) {
   DISK disk;
   if (!DISK_Initialize(&disk, bootDrive)) {
     printf("[STAGE2]: Disk init error!\n");
-    goto end;
+    return;
   }
+
+  uint32_t partitionStart = MBR_DetectPartition(&disk, partition);
 
   if (!FAT_Initialize(&disk)) {
     printf("[STAGE2]: FAT init error!\n");
-    goto end;
+    return;
   }
 
   // Loading kernel
@@ -45,8 +48,12 @@ void __attribute__((cdecl)) start(uint16_t bootDrive) {
   printf("[STAGE2]: Executing kernel from memory: 0x%lx\n", Kernel);
   KernelStart kernelStart = (KernelStart)Kernel;
   kernelStart();
-end:
-  printf("[STAGE2]: Halt processor");
+}
+
+void __attribute__((cdecl)) start(uint16_t bootDrive, void *partition) {
+  stage2_start(bootDrive, partition);
+
+  printf("[STAGE2]: Halt processor\n");
   for (;;)
     ;
 }

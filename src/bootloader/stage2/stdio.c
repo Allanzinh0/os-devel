@@ -5,6 +5,8 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
+#define DEBUG_ENABLE 1
+
 const unsigned SCREEN_WIDTH = 80;
 const unsigned SCREEN_HEIGHT = 25;
 uint8_t *g_ScreenBuffer = (uint8_t *)0xB8000;
@@ -52,6 +54,10 @@ void scrollBack(int lines) {
 }
 
 void putc(char c) {
+#if DEBUG_ENABLE
+  x86_outb(0xE9, c);
+#endif
+
   switch (c) {
   case '\n':
     g_ScreenX = 0;

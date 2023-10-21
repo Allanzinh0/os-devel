@@ -22,10 +22,10 @@ RUN make install-gcc
 RUN make -j8 all-target-libgcc
 RUN make install-target-libgcc 
 
-RUN apk add --no-cache dosfstools
+RUN apk add --no-cache dosfstools parted
 WORKDIR /app
 COPY . /app
-RUN make
+RUN make disk_image
 
 FROM scratch AS export-stage
 COPY --from=build /app/build/* .

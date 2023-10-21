@@ -29,3 +29,4 @@ always:
 
 clean:
 	rm -f $(OBJ_DIR)/stage2.bin
+	rm -rf $(OBJ_DIR)/stage2

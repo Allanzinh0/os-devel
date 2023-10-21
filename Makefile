@@ -3,6 +3,7 @@ include build-tools/config.mk
 .PHONY: all floppy_image kernel bootloader tools_fat clean always run docker
 
 all: clean always floppy_image bootloader kernel
+
 #
 # Floppy Image
 #
@@ -10,6 +11,15 @@ floppy_image: $(BUILD_DIR)/main_floppy.img
 
 $(BUILD_DIR)/main_floppy.img: bootloader kernel
 	./build-tools/make_floppy.sh $@
+
+#
+# Disk Image
+#
+disk_image: $(BUILD_DIR)/main_disk.raw
+
+$(BUILD_DIR)/main_disk.raw: bootloader kernel
+	./build-tools/make_disk.sh $@ $(MAKE_DISK_SIZE)
+
 #
 # Bootloader
 #
@@ -65,5 +75,14 @@ clean:
 #
 # Run
 #
-run:
-	qemu-system-i386 -fda $(BUILD_DIR)/main_floppy.img
+run_floppy:
+	qemu-system-i386 -m 32 -debugcon stdio -fda $(BUILD_DIR)/main_floppy.img
+
+run_disk:
+	qemu-system-i386 -m 32 -debugcon stdio -drive file=$(BUILD_DIR)/main_disk.raw,format=raw,index=0,media=disk
+
+#
+# Debug
+#
+debug_disk:
+	gdb -x debug_disk.gdb
