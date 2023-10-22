@@ -1,4 +1,5 @@
-export MAKE_DISK_SIZE=16777216
+export MAKE_DISK_SIZE=$$(( 64 * 1024 * 1024 ))
+export MAKE_PART_FORMAT=32
 
 export TARGET = i686-elf
 export TARGET_ASM = nasm

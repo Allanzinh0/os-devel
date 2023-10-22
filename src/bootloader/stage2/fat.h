@@ -1,6 +1,7 @@
 #pragma once
 
-#include "disk.h"
+#include "mbr.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -38,10 +39,11 @@ enum FAT_Attributes {
                       FAT_ATTRIBUTE_DIRECTORY | FAT_ATTRIBUTE_ARCHIVE
 };
 
-bool FAT_Initialize(DISK *disk);
-FAT_File *FAT_Open(DISK *disk, const char *path);
-FAT_File *FAT_OpenEntry(DISK *disk, FAT_DirectoryEntry *entry);
-uint32_t FAT_Read(DISK *disk, FAT_File *file, uint32_t byteCount,
+bool FAT_Initialize(Partition *disk);
+FAT_File *FAT_Open(Partition *disk, const char *path);
+FAT_File *FAT_OpenEntry(Partition *disk, FAT_DirectoryEntry *entry);
+uint32_t FAT_Read(Partition *disk, FAT_File *file, uint32_t byteCount,
                   void *dataOut);
-bool FAT_ReadEntry(DISK *disk, FAT_File *file, FAT_DirectoryEntry *dataOut);
+bool FAT_ReadEntry(Partition *disk, FAT_File *file,
+                   FAT_DirectoryEntry *dataOut);
 void FAT_Close(FAT_File *file);

@@ -30,7 +30,7 @@ dd if=${OBJ_DIR}/stage2.bin of=$TARGET conv=notrunc bs=512 seek=1 >/dev/null
 TARGET_PARTITION="${TARGET}.part1.raw"
 dd if=/dev/zero of=$TARGET_PARTITION bs=512 count=$(( ${DISK_SECTOR_COUNT} - ${DISK_PART1_BEGIN} )) >/dev/null
 
-mkfs.fat -F 16 -n "OS-DEVEL" $TARGET_PARTITION >/dev/null
+mkfs.fat -F $MAKE_PART_FORMAT -n "OS-DEVEL" $TARGET_PARTITION >/dev/null
 
 # Add bootloader
 STAGE1_OFFSET=$(grep __entry_start ${BUILD_DIR}/stage1.map | grep -oaE "0x[0-z]+")
@@ -46,7 +46,8 @@ echo "01 00 00 00" | xxd -r -p | dd of=$TARGET_PARTITION conv=notrunc bs=1 seek=
 printf "%x" ${STAGE2_SECTORS} | xxd -r -p | dd of=$TARGET_PARTITION conv=notrunc bs=1 seek=$(( ${STAGE2_ENTRY} + 4 )) >/dev/null
 
 # Add Files and kernel
-mcopy -i $TARGET_PARTITION ${BUILD_DIR}/kernel.bin "::kernel.bin"
+mmd -i $TARGET_PARTITION "::boot"
+mcopy -i $TARGET_PARTITION ${BUILD_DIR}/kernel.bin "::boot/kernel.bin"
 mcopy -i $TARGET_PARTITION test.txt "::test.txt"
 mmd -i $TARGET_PARTITION "::mydir"
 mcopy -i $TARGET_PARTITION test.txt "::mydir/test.txt"

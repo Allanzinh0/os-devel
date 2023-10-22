@@ -1,4 +1,4 @@
-TARGET_ASMFLAGS += -f elf
+TARGET_ASMFLAGS += -f elf -DFILESYSTEM=${MAKE_PART_FORMAT}
 TARGET_LINKFLAGS += -T linker.ld -nostdlib
 
 SOURCES_ASM=$(wildcard *.asm)
