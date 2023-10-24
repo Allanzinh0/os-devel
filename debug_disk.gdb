@@ -1,4 +1,4 @@
 b *0x7C00
 set disassembly-flavor intel
-layout asm
+symbol-file build/kernel.elf
 target remote | qemu-system-i386 -S -gdb stdio -m 32 -hda build/main_disk.raw

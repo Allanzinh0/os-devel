@@ -28,7 +28,7 @@ printf "%x" ${STAGE2_SECTORS} | xxd -r -p | dd of=$TARGET conv=notrunc bs=1 seek
 
 # Add Files and kernel
 mmd -i $TARGET "::boot"
-mcopy -i $TARGET ${BUILD_DIR}/kernel.bin "::boot/kernel.bin"
+mcopy -i $TARGET ${BUILD_DIR}/kernel.elf "::boot/kernel.elf"
 mcopy -i $TARGET test.txt "::test.txt"
 mmd -i $TARGET "::mydir"
 mcopy -i $TARGET test.txt "::mydir/test.txt"

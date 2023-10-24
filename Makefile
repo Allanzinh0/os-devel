@@ -38,22 +38,13 @@ $(OBJ_DIR)/stage2.bin: always
 #
 # Kernel
 #
-kernel: $(BUILD_DIR)/kernel.bin
+kernel: $(BUILD_DIR)/kernel.elf
 
-$(BUILD_DIR)/kernel.bin: always
+$(BUILD_DIR)/kernel.elf: always
 	$(MAKE) -C src/kernel
 
 docker:
 	docker build --file Dockerfile --output $(BUILD_DIR) .
-
-#
-# Tools
-#
-tools_fat: $(BUILD_DIR)/tools/fat
-
-$(BUILD_DIR)/tools/fat: $(TOOLS_DIR)/fat/fat.c
-	mkdir -p $(BUILD_DIR)/tools
-	$(CC) -g -o $(BUILD_DIR)/tools/fat $(TOOLS_DIR)/fat/fat.c
 
 #
 # Always

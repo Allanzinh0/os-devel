@@ -14,9 +14,9 @@ OBJECTS_ASM=$(patsubst %.asm, $(OBJ_DIR)/kernel/asm/%.obj, $(SOURCES_ASM))
 
 all: clean kernel
 
-kernel: $(BUILD_DIR)/kernel.bin
+kernel: $(BUILD_DIR)/kernel.elf
 	
-$(BUILD_DIR)/kernel.bin: $(OBJECTS_ASM) $(OBJECTS_C)
+$(BUILD_DIR)/kernel.elf: $(OBJECTS_ASM) $(OBJECTS_C)
 	$(TARGET_LD) $(TARGET_LINKFLAGS) -Wl,-Map=$(BUILD_DIR)/kernel.map -o $@ $^ $(TARGET_LIBS)
 
 $(OBJ_DIR)/kernel/c/%.obj: %.c $(HEADERS_C)
@@ -28,4 +28,5 @@ $(OBJ_DIR)/kernel/asm/%.obj: %.asm $(HEADERS_ASM)
 	$(TARGET_ASM) $(TARGET_ASMFLAGS) -o $@ $<
 
 clean:
-	rm -f $(OBJ_DIR)/kernel.bin
+	rm -rf $(OBJ_DIR)/kernel/
+	rm -f $(OBJ_DIR)/kernel.elf

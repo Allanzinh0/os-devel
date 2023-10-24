@@ -47,7 +47,7 @@ printf "%x" ${STAGE2_SECTORS} | xxd -r -p | dd of=$TARGET_PARTITION conv=notrunc
 
 # Add Files and kernel
 mmd -i $TARGET_PARTITION "::boot"
-mcopy -i $TARGET_PARTITION ${BUILD_DIR}/kernel.bin "::boot/kernel.bin"
+mcopy -i $TARGET_PARTITION ${BUILD_DIR}/kernel.elf "::boot/kernel.elf"
 mcopy -i $TARGET_PARTITION test.txt "::test.txt"
 mmd -i $TARGET_PARTITION "::mydir"
 mcopy -i $TARGET_PARTITION test.txt "::mydir/test.txt"
