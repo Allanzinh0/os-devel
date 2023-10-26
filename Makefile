@@ -43,8 +43,8 @@ kernel: $(BUILD_DIR)/kernel.elf
 $(BUILD_DIR)/kernel.elf: always
 	$(MAKE) -C src/kernel
 
-docker:
-	docker build --file Dockerfile --output $(BUILD_DIR) .
+docker_disk:
+	docker build --file Dockerfile --build-arg MAKE_CMD=disk_image --output $(BUILD_DIR) .
 
 #
 # Always
