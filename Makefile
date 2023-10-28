@@ -10,6 +10,11 @@ include build-tools/stage2.mk
 include build-tools/kernel.mk
 
 #
+# LIBRARYS
+#
+include build-tools/libs/libcore.mk
+
+#
 # Clean
 #
 clean:

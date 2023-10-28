@@ -3,6 +3,7 @@ STAGE2_SRC := ${SOURCE_DIR}/bootloader/stage2
 STAGE2_ASMFLAGS := ${TARGET_ASMFLAGS} -f elf
 STAGE2_CFLAGS := ${TARGET_CFLAGS} -ffreestanding -nostdlib
 STAGE2_LIBS := ${TARGET_LIBS} -lgcc
+STAGE2_STATIC_LIBS := $(BUILD_DIR)/libs/libcore.o
 STAGE2_LINKFLAGS := ${TARGET_LINKFLAGS} -T ${STAGE2_SRC}/linker.ld -nostdlib
 
 # Assembly
@@ -15,7 +16,7 @@ STAGE2_OBJ_C=$(patsubst $(STAGE2_SRC)/%.c, $(OBJ_DIR)/stage2/c/%.obj, $(STAGE2_S
 
 stage2: $(BUILD_DIR)/bootloader/stage2.bin
 	
-$(BUILD_DIR)/bootloader/stage2.bin: $(STAGE2_OBJ_ASM) $(STAGE2_OBJ_C)
+$(BUILD_DIR)/bootloader/stage2.bin: $(STAGE2_OBJ_ASM) $(STAGE2_OBJ_C) $(STAGE2_STATIC_LIBS)
 	@mkdir -p $(@D)
 	@$(TARGET_LD) $(STAGE2_LINKFLAGS) -Wl,-Map=$(BUILD_DIR)/bootloader/stage2.map -o $@ $^ $(STAGE2_LIBS)
 	@echo " > Linked: $@ file"

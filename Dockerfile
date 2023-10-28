@@ -29,4 +29,4 @@ ARG MAKE_CMD
 RUN make ${MAKE_CMD}
 
 FROM scratch AS export-stage
-COPY --from=build /app/build/* .
+COPY --from=build /app/build .
