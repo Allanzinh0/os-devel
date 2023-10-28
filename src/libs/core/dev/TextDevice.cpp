@@ -20,16 +20,16 @@ enum class PrintfLength {
 
 const char TextDevice::s_HexChars[] = "0123456789ABCDEF";
 
-TextDevice::TextDevice(CharacterDevice *dev) : m_Device(dev) {}
+TextDevice::TextDevice(CharacterDevice *dev) { m_Device = dev; }
 
 bool TextDevice::Write(char c) {
-  return m_Device->Write((uint8_t *)&c, sizeof(char)) == sizeof(char);
+  return m_Device->Write((uint8_t *)(&c), sizeof(c)) == sizeof(c);
 }
 
 bool TextDevice::Write(const char *str) {
   bool ok = true;
 
-  while (*str && ok) {
+  while (*str) {
     ok = ok && Write(*str);
     str++;
   }
@@ -134,13 +134,13 @@ bool TextDevice::VFormat(const char *fmt, va_list args) {
           case PrintfLength::ShortShort:
           case PrintfLength::Short:
           case PrintfLength::Default:
-            ok = ok && Write(va_arg(args, int), radix);
+            ok = ok && WriteNumber(va_arg(args, int), radix);
             break;
           case PrintfLength::Long:
-            ok = ok && Write(va_arg(args, long), radix);
+            ok = ok && WriteNumber(va_arg(args, long), radix);
             break;
           case PrintfLength::LongLong:
-            ok = ok && Write(va_arg(args, long long), radix);
+            ok = ok && WriteNumber(va_arg(args, long long), radix);
             break;
           }
         } else {
@@ -148,13 +148,13 @@ bool TextDevice::VFormat(const char *fmt, va_list args) {
           case PrintfLength::ShortShort:
           case PrintfLength::Short:
           case PrintfLength::Default:
-            ok = ok && Write(va_arg(args, unsigned int), radix);
+            ok = ok && WriteNumber(va_arg(args, unsigned int), radix);
             break;
           case PrintfLength::Long:
-            ok = ok && Write(va_arg(args, unsigned long), radix);
+            ok = ok && WriteNumber(va_arg(args, unsigned long), radix);
             break;
           case PrintfLength::LongLong:
-            ok = ok && Write(va_arg(args, unsigned long long), radix);
+            ok = ok && WriteNumber(va_arg(args, unsigned long long), radix);
             break;
           }
         }
@@ -176,11 +176,9 @@ bool TextDevice::VFormat(const char *fmt, va_list args) {
 }
 
 bool TextDevice::Format(const char *fmt, ...) {
-  bool ok = true;
-
   va_list args;
   va_start(args, fmt);
-  ok = ok && VFormat(fmt, args);
+  bool ok = VFormat(fmt, args);
   va_end(args);
 
   return ok;
@@ -189,7 +187,7 @@ bool TextDevice::Format(const char *fmt, ...) {
 bool TextDevice::FormatBuffer(const char *msg, const void *buffer,
                               size_t size) {
   bool ok = true;
-  ok = ok && Format(msg);
+  ok = ok && Write(msg);
 
   for (int i = 0; i < size; i++) {
     if (i % 16 == 0)
@@ -197,6 +195,9 @@ bool TextDevice::FormatBuffer(const char *msg, const void *buffer,
 
     if (i % 4 == 0)
       ok = ok && Format(" ");
+
+    if (((uint8_t *)buffer)[i] < 16)
+      Format("0");
 
     ok = ok && Format("%p ", ((uint8_t *)buffer)[i]);
   }

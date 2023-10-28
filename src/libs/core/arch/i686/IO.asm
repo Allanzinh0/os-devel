@@ -14,3 +14,8 @@ InB:
   in al, dx
   ret
 
+global Panic
+Panic:
+  [bits 32]
+  cli
+  hlt

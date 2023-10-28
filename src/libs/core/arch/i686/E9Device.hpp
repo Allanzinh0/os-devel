@@ -1,6 +1,6 @@
 #pragma once
 
-#include "dev/CharacterDevice.hpp"
+#include "../../dev/CharacterDevice.hpp"
 
 #include <stddef.h>
 #include <stdint.h>

@@ -1,13 +1,13 @@
 #include "VGATextDevice.hpp"
 
-#include "IO.h"
+#include "IO.hpp"
 
 namespace arch {
 namespace i686 {
 
 static inline constexpr unsigned ScreenWidth = 80;
 static inline constexpr unsigned ScreenHeight = 25;
-static inline constexpr uint8_t DefaultColor = 0x07;
+static inline constexpr uint8_t DefaultColor = 0x7;
 
 uint8_t *VGATextDevice::s_Buffer = (uint8_t *)0xB8000;
 
@@ -20,7 +20,7 @@ size_t VGATextDevice::Read(uint8_t *dataOut, size_t size) { return 0; }
 
 size_t VGATextDevice::Write(const uint8_t *data, size_t size) {
   for (int i = 0; i < size; i++) {
-    PutChar(data[i]);
+    PutChar((char)data[i]);
   }
 
   return size;
@@ -29,8 +29,8 @@ size_t VGATextDevice::Write(const uint8_t *data, size_t size) {
 void VGATextDevice::Clear() {
   for (int y = 0; y < ScreenHeight; y++) {
     for (int x = 0; x < ScreenWidth; x++) {
-      PutChar('\0', x, y);
-      PutColor(m_Color, x, y);
+      PutChar(' ', x, y);
+      PutColor(DefaultColor, x, y);
     }
   }
 
@@ -74,7 +74,7 @@ void VGATextDevice::Scrollback(int lines) {
 
   for (int y = ScreenHeight - lines; y < ScreenHeight; y++)
     for (int x = 0; x < ScreenWidth; x++) {
-      PutChar(x, y, '\0');
+      PutChar(x, y, ' ');
       PutColor(x, y, DefaultColor);
     }
 
@@ -96,7 +96,7 @@ void VGATextDevice::PutChar(char chr) {
       PutChar(' ');
   default:
     PutChar(chr, m_ScreenX, m_ScreenY);
-    PutColor(m_Color, m_ScreenX, m_ScreenY);
+    PutColor(DefaultColor, m_ScreenX, m_ScreenY);
     m_ScreenX++;
     break;
   }

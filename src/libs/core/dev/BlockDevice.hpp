@@ -11,6 +11,7 @@ class BlockDevice : public CharacterDevice {
 public:
   virtual ~BlockDevice() {}
 
-  virtual void Seek(SeekPos pos, int rel) = 0;
+  virtual bool Seek(SeekPos pos, int rel) = 0;
   virtual size_t Size() = 0;
+  virtual size_t Position() = 0;
 };

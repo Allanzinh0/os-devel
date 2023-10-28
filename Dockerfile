@@ -25,8 +25,10 @@ RUN make install-target-libgcc
 RUN apk add --no-cache dosfstools parted
 WORKDIR /app
 COPY . /app
+RUN make clean
 ARG MAKE_CMD
 RUN make ${MAKE_CMD}
 
 FROM scratch AS export-stage
-COPY --from=build /app/build .
+COPY --from=build /app/obj ./obj
+COPY --from=build /app/build ./build

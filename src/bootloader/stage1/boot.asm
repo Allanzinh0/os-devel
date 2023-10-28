@@ -1,5 +1,7 @@
 [bits 16]
 
+%include "config.inc"
+
 %define ENDL 0x0D, 0x0A
 %define fat12 12
 %define fat16 16
@@ -53,33 +55,47 @@ section .fsheaders
 ;
 section .entry
   global start
+
+  ; The MBR will pass us the following information
+  ; DL = drive number
+  ; DS:SI = partition table entry that we booted from
   start:
-    ; Move partition entry from MBR
-    mov ax, PARTITION_ENTRY_SEGMENT
+    ;
+    ; Copy partition entry from MBR
+    ;
+    mov ax, STAGE1_SEGMENT
     mov es, ax
-    mov di, PARTITION_ENTRY_OFFSET
+    mov di, partition_entry
     mov cx, 16
     rep movsb
 
-    mov di, ds
+    ;
+    ; Relocate itself
+    ;
+    mov ax, 0
+    mov ds, ax
+    mov si, 0x7c00
+    mov di, STAGE1_OFFSET
+    mov cx, 512
+    rep movsb
+
+    jmp STAGE1_SEGMENT:.relocated
+
+  .relocated:
+    ;
+    ; Initialization
+    ;
 
     ; setup data segments
-    mov ax, 0           ; Can't write ti ds/es directly
+    mov ax, STAGE1_SEGMENT  ; Can't write ti ds/es directly
     mov ds, ax
     mov es, ax
 
     ; setup stack
     mov ss, ax
-    mov sp, 0x7C00      ; Stack grows downwards from where we are loaded in memory
+    mov sp, STAGE1_OFFSET   ; Stack grows downwards from where we are loaded in memory
 
-    ; Some BIOSes might start us at 07C0:0000 instead of 0000:7C00, make sure we are in the
-    ; expected location
-    push es
-    push word .after
-    retf
-  .after:
-    ; read something from floppy disk
-    ; BIOS should set DL to drive number
+    ; Save drive number from dl
     mov [ebr_drive_number], dl
 
     ; Check extensions present
@@ -100,45 +116,54 @@ section .entry
     mov byte [have_extensions], 0
 
   .after_disk_extensions_check:
-    ; Load stage 2
-    mov si, stage2_location
-
-    mov ax, STAGE_2_LOAD_SEGMENT
-    mov es, ax
-
-    mov bx, STAGE_2_LOAD_OFFSET
-  .loop:
-    mov eax, [si]
-    add si, 4
-    mov cl, [si]
-    inc si
-
-    cmp eax, 0
-    je .read_finish
-
+    ;
+    ; Load boot_table_lba which contains the boot table
+    ;
+    mov eax, [boot_table_lba]
+    mov cx, 1
+    mov bx, boot_table
     call disk_read
 
-    xor ch, ch
-    shl cx, 5
-    mov di, es
-    add di, cx
-    mov es, di
+    ;
+    ; Parse boot table and load
+    ;
+    mov si, boot_table
 
+    ; Parse entry point
+    mov eax, [si]
+    mov [entry_point], eax
+    add si, 4
+
+  .readloop:
+    ; Read until lba=0
+    cmp dword [si + boot_table_entry.lba], 0
+    je .endreadloop
+
+    mov eax, [si + boot_table_entry.lba]
+    mov bx, [si + boot_table_entry.load_seg]
+    mov es, bx
+    mov bx, [si + boot_table_entry.load_off]
+    mov cx, [si + boot_table_entry.count]
+    call disk_read
+
+    ; Go to next entry
+    add si, boot_table_entry_size
+    jmp .readloop
     
-    jmp .loop
-
-  .read_finish:
+  .endreadloop:
     ; Jump to stage 2
     mov dl, [ebr_drive_number]
-    mov si, PARTITION_ENTRY_OFFSET
-    mov di, PARTITION_ENTRY_SEGMENT
+    mov di, partition_entry             ; ES:DI points to partition entry
 
-    mov ax, STAGE_2_LOAD_SEGMENT
+    mov ax, [entry_point.seg]
     mov ds, ax
-    mov es, ax
 
-    jmp STAGE_2_LOAD_SEGMENT:STAGE_2_LOAD_OFFSET
-    
+    ; Do far jump
+    push ax
+    push word [entry_point.off]
+    retf
+
+  .never:
     jmp wait_key_and_reboot             ; Should never happen
 
     cli                                 ; Disable interrupts, this way we can't get out of "halt" state
@@ -151,12 +176,6 @@ section .text
   floppy_error:
     ; print message
     mov si, msg_read_failed
-    call puts
-    jmp wait_key_and_reboot
-
-  stage2_not_found_error:
-    ; print message
-    mov si, msg_stage2_not_found
     call puts
     jmp wait_key_and_reboot
 
@@ -254,20 +273,11 @@ section .text
     mov [extensions_dap.lba], eax
     mov [extensions_dap.segment], es
     mov [extensions_dap.offset], bx
-    mov [extensions_dap.count], cl
+    mov [extensions_dap.count], cx
 
     mov ah, 0x42
     mov si, extensions_dap
     mov di, 3
-    jmp .retry
-
-  .no_disk_extensions:
-    push cx                             ; temporarily save CL (number of sectors to read)
-    call lba_to_chs                     ; compute CHS
-    pop ax                              ; AL = number of sectors to read
-
-    mov ah, 02h
-    mov di, 3                           ; retry count
 
   .retry:
     pusha                               ; Save all registers, we don't know what bios modifies
@@ -283,13 +293,57 @@ section .text
     test di, di
     jnz .retry
 
+  .done:
+    popa
+    jmp .function_end
+
+  .no_disk_extensions:
+    mov esi, eax                        ; Save lba to esi
+    mov di, cx                          ; Save number of sectors to di
+    
+  .outer_loop:
+    mov eax, esi
+    call lba_to_chs                     ; compute CHS
+    mov al, 1
+
+    push di
+    mov di, 3                           ; retry count
+    mov ah, 02h
+
+  .inner_retry:
+    pusha                               ; Save all registers, we don't know what bios modifies
+    stc                                 ; Set carry flag, some BIOS'es don't set it
+    int 13h                             ; Carry flag cleared = success
+    jnc .inner_done                           ; jump if carry not set
+
+    ; read failed
+    popa
+    call disk_reset
+
+    dec di
+    test di, di
+    jnz .inner_retry
+
   .fail:
     ; all attempts are exhausted
     jmp floppy_error
 
-  .done:
+  .inner_done:
     popa
+    pop di
 
+    cmp di, 0
+    je .function_end
+
+    inc esi
+    dec di
+    mov ax, es
+    add ax, 512 / 16
+    mov es, ax
+
+    jmp .outer_loop
+
+  .function_end:
     pop di                             ; Restore registers modified
     pop si
     pop dx
@@ -313,11 +367,8 @@ section .text
 
 section .rodata
   msg_read_failed: db 'Read failed!', ENDL, 0
-  msg_stage2_not_found: db 'STAGE2.BIN file not found!', ENDL, 0
-  file_stage2_bin: db 'STAGE2  BIN'
 
-section data
-  have_extensions: db 0
+section .data
   extensions_dap:
     .size:  db 10h
             db 0
@@ -326,12 +377,22 @@ section data
     .segment: dw 0
     .lba: dq 0
 
-  STAGE_2_LOAD_SEGMENT: equ 0x0
-  STAGE_2_LOAD_OFFSET: equ 0x500
+  struc boot_table_entry
+    .lba            resd 1
+    .load_off       resw 1
+    .load_seg       resw 1
+    .count          resw 1
+  endstruc
 
-  PARTITION_ENTRY_SEGMENT: equ 0x2000
-  PARTITION_ENTRY_OFFSET: equ 0x0
+section .data
+  global boot_table_lba
+  boot_table_lba:   dd 0
 
-  global stage2_location
-  stage2_location: times 30 db 0
-
+section .bss
+  have_extensions:  resb 1
+  buffer:           resb 512
+  partition_entry:  resb 16
+  boot_table:       resb 512
+  entry_point:
+    .off            resw 1
+    .seg            resw 1

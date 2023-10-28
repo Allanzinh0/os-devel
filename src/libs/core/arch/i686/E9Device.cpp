@@ -1,6 +1,6 @@
 #include "E9Device.hpp"
 
-#include "IO.h"
+#include "IO.hpp"
 
 namespace arch {
 namespace i686 {

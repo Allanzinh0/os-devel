@@ -4,8 +4,9 @@ section .entry
 
 extern __bss_start
 extern __end
+extern _init
 
-extern start
+extern Start
 global entry
 
 entry:
@@ -13,8 +14,8 @@ entry:
 
     ; Save boot drive
     mov [g_BootDrive], dl
-    mov [g_BootPartitionOff], si
-    mov [g_BootPartitionSeg], di
+    mov [g_BootPartitionOff], di
+    mov [g_BootPartitionSeg], es
 
     mov ax, ds
     mov ss, ax
@@ -35,7 +36,7 @@ entry:
 
 .pmode:
   [bits 32]
-  xor eax, eax
+
   mov ax, 0x10
   mov ds, ax
   mov ss, ax
@@ -48,6 +49,8 @@ entry:
   cld
   rep stosb
 
+  call _init
+
   mov dx, [g_BootPartitionSeg]
   shl edx, 16
   mov dx, [g_BootPartitionOff]
@@ -56,7 +59,7 @@ entry:
   xor edx, edx
   mov dl, [g_BootDrive]
   push edx
-  call start
+  call Start
 
   cli
   hlt

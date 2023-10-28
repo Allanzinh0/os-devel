@@ -1,6 +1,6 @@
 #pragma once
 
-#include "dev/CharacterDevice.hpp"
+#include "../../dev/CharacterDevice.hpp"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -11,8 +11,8 @@ namespace i686 {
 class VGATextDevice : public CharacterDevice {
 public:
   VGATextDevice();
-  size_t Read(uint8_t *dataOut, size_t size);
-  size_t Write(const uint8_t *data, size_t size);
+  virtual size_t Read(uint8_t *dataOut, size_t size) override;
+  virtual size_t Write(const uint8_t *data, size_t size) override;
 
   void Clear();
 
@@ -32,9 +32,9 @@ private:
   void PutChar(char chr);
 
 private:
-  static uint8_t *s_Buffer;
   uint32_t m_ScreenX, m_ScreenY;
   uint8_t m_Color;
+  static uint8_t *s_Buffer;
 };
 
 } // namespace i686

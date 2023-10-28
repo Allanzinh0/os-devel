@@ -1,6 +1,6 @@
 ENTRY(start)
 OUTPUT_FORMAT("binary")
-phys = 0x7C00;
+phys = 0x700;
 
 SECTIONS {
   . = phys;
@@ -11,6 +11,6 @@ SECTIONS {
   .text               : { *(.text)      }
   .data               : { *(.data)      }
   .rodata             : { *(.rodata)    }
-  .bios_footer 0x7DFE : { SHORT(0xAA55) }
+  .bios_footer phys + 0x1FE : { SHORT(0xAA55) }
   .bss                : { *(.bss)       }
 }

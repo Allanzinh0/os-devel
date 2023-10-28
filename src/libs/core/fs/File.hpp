@@ -1,13 +1,11 @@
 #pragma once
 
-#include "dev/BlockDevice.hpp"
+#include <core/dev/BlockDevice.hpp>
 
-#include <stddef.h>
-#include <stdint.h>
-
-enum class SeekPos { Set, Current, End };
+class FileEntry;
 
 class File : public BlockDevice {
 public:
-  virtual ~File() {}
+  virtual FileEntry *ReadFileEntry() = 0;
+  virtual void Release() = 0;
 };
